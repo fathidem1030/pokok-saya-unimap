@@ -1,7 +1,7 @@
 {
   "id": "/index.html",
-  "name": "Pokok Saya - Smart Plant Weighing",
-  "short_name": "Pokok Saya",
+  "name": "Smart Balcony Unimap",
+  "short_name": "Smart Balcony",
   "description": "App mudah untuk memantau dan menyiram pokok dari mana-mana sahaja.",
   "start_url": "./index.html",
   "scope": "./",
