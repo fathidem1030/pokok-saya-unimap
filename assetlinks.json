@@ -1,8 +1,8 @@
 [{
-  "relation": ["delegate_permission/common.handle_all_urls"],
-  "target": {
-    "namespace": "android_app",
-    "package_name": "my.edu.unimap.pokoksaya",
-    "sha256_cert_fingerprints": ["GANTI_DENGAN_FINGERPRINT_DARI_PWABUILDER"]
-  }
-}]
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.pokok_saya_unimap.twa",
+        "sha256_cert_fingerprints": ["02:C2:20:07:2F:5F:39:84:90:E4:DC:5E:40:81:93:6E:F0:7D:D1:4A:94:E0:35:24:40:FC:B3:02:BE:8E:C0:94"]
+      }
+    }]
