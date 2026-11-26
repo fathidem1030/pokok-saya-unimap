@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#065f46">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Pokok Saya">
-  <title>Pokok Saya</title>
+  <meta name="apple-mobile-web-app-title" content="Smart Balcony Unimap">
+  <title>Smart Balcony Unimap</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon-192.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -164,11 +164,21 @@
     </div>
   </div>
 
+  <!-- ===== Gagal memuatkan (internet) ===== -->
+  <div id="ov-neterr" class="overlay">
+    <div class="login-box">
+      <img src="logo-unimap.png" alt="UniMAP">
+      <h2>Tidak dapat dimuatkan</h2>
+      <p>Pastikan telefon ada sambungan internet (Wi-Fi atau data), kemudian tekan Cuba Lagi.<br><small>Cannot load. Check your internet connection and try again.</small></p>
+      <button class="btn-main siram" onclick="retryLoad()" style="font-size:1.3rem;">🔄 CUBA LAGI</button>
+    </div>
+  </div>
+
   <!-- ===== Imbas kod QR (sekali sahaja) ===== -->
   <div id="ov-pair" class="overlay">
     <div class="login-box">
       <img src="logo-unimap.png" alt="UniMAP">
-      <h2 data-t="appName">Pokok Saya</h2>
+      <h2 data-t="appName">Smart Balcony Unimap</h2>
       <p data-t="pairDesc">Imbas kod QR pada alat untuk mula. Cuma perlu buat sekali sahaja.</p>
       <button class="btn-main siram" onclick="startScan()" style="font-size:1.3rem;">📷 <span data-t="scanBtn">IMBAS KOD QR</span></button>
       <div class="steps">
@@ -381,11 +391,13 @@
    1) TETAPAN FIREBASE  (diisi oleh penjaga — lihat PANDUAN.md)
    ===================================================================== */
 const FIREBASE_CONFIG = {
-  apiKey: "PASTE_API_KEY",
-  authDomain: "PROJECT_ID.firebaseapp.com",
-  databaseURL: "https://PROJECT_ID-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "PROJECT_ID",
-  appId: "PASTE_APP_ID"
+  apiKey: "AIzaSyDwc66_K4Ms71k0_kE7D0NL64L1SvgYPU4",
+  authDomain: "pokok-saya-unimap.firebaseapp.com",
+  databaseURL: "https://pokok-saya-unimap-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "pokok-saya-unimap",
+  storageBucket: "pokok-saya-unimap.firebasestorage.app",
+  messagingSenderId: "459990699602",
+  appId: "1:459990699602:web:ac712989ffc18b9aab598b"
 };
 // Tiada log masuk: kunci alat (DEVICE_ID) diambil daripada kod QR dan disimpan dalam telefon.
 const KEY_PATTERN = /^[A-Za-z0-9_-]{16,64}$/;   // kunci mesti 16–64 aksara (lihat qr.html)
@@ -399,7 +411,7 @@ const LOW_WATER_PCT = 20;           // amaran air baja hampir habis
 let lang = 'MY';
 const TXT = {
   MY: {
-    appName: 'Pokok Saya', pairDesc: 'Imbas kod QR pada alat untuk mula. Cuma perlu buat sekali sahaja.', scanBtn: 'IMBAS KOD QR', step1: 'Tekan butang biru di atas', step2: 'Halakan kamera ke kod QR pada alat', step3: 'App akan terus dibuka', scanHint: 'Halakan kamera ke kod QR', cancel: 'Batal', camErr: 'Kamera tidak dapat dibuka. Benarkan akses kamera, atau imbas kod QR dengan aplikasi Kamera telefon.', badQR: 'Kod QR ini bukan untuk app Pokok Saya.', connErr: 'Tidak dapat menyambung. Semak internet dan cuba lagi.', shareQR: '📱 Kongsi ke Telefon Lain (Kod QR)', forget: 'Lupakan Alat Ini', shareT: 'Imbas dengan telefon lain', shareD: 'Telefon ahli keluarga boleh imbas kod ini untuk guna app yang sama.', close: 'Tutup', askForgetT: 'Lupakan alat ini?', askForgetD: 'Anda perlu imbas kod QR semula untuk guna app. Rekod tidak dipadam.', yesForget: 'YA, LUPAKAN', paired: '✓ Alat berjaya disambung',
+    appName: 'Smart Balcony Unimap', pairDesc: 'Imbas kod QR pada alat untuk mula. Cuma perlu buat sekali sahaja.', scanBtn: 'IMBAS KOD QR', step1: 'Tekan butang biru di atas', step2: 'Halakan kamera ke kod QR pada alat', step3: 'App akan terus dibuka', scanHint: 'Halakan kamera ke kod QR', cancel: 'Batal', camErr: 'Kamera tidak dapat dibuka. Benarkan akses kamera, atau imbas kod QR dengan aplikasi Kamera telefon.', badQR: 'Kod QR ini bukan untuk app Smart Balcony Unimap.', connErr: 'Tidak dapat menyambung. Semak internet dan cuba lagi.', shareQR: '📱 Kongsi ke Telefon Lain (Kod QR)', forget: 'Lupakan Alat Ini', shareT: 'Imbas dengan telefon lain', shareD: 'Telefon ahli keluarga boleh imbas kod ini untuk guna app yang sama.', close: 'Tutup', askForgetT: 'Lupakan alat ini?', askForgetD: 'Anda perlu imbas kod QR semula untuk guna app. Rekod tidak dipadam.', yesForget: 'YA, LUPAKAN', paired: '✓ Alat berjaya disambung',
     potWeight: 'Berat pasu', gram: 'gram', fertWater: 'Baki air baja', waterNow: 'SIRAM SEKARANG', stopNow: 'BERHENTI SIRAM',
     mRecord: 'Rekod & Laporan', mRecordSub: 'Simpan & muat turun data', mHarvest: 'Bila Boleh Tuai?', mHarvestSub: 'Kira tarikh tuai tanaman',
     mSettings: 'Tetapan', mSettingsSub: 'Untuk penjaga / ahli keluarga', back: 'Kembali',
@@ -435,7 +447,7 @@ const TXT = {
     colTime: 'Tarikh & Masa', colW: 'Berat (g)', minWord: 'minit', secWord: 'saat', devInfo: 'Alat'
   },
   EN: {
-    appName: 'My Plant', pairDesc: 'Scan the QR code on the device to start. You only need to do this once.', scanBtn: 'SCAN QR CODE', step1: 'Press the blue button above', step2: 'Point the camera at the QR code on the device', step3: 'The app opens straight away', scanHint: 'Point the camera at the QR code', cancel: 'Cancel', camErr: 'Cannot open the camera. Allow camera access, or scan the QR code with the phone Camera app.', badQR: 'This QR code is not for the My Plant app.', connErr: 'Cannot connect. Check the internet and try again.', shareQR: '📱 Share to Another Phone (QR Code)', forget: 'Forget This Device', shareT: 'Scan with another phone', shareD: 'A family member can scan this code to use the same app.', close: 'Close', askForgetT: 'Forget this device?', askForgetD: 'You will need to scan the QR code again to use the app. Records are not deleted.', yesForget: 'YES, FORGET', paired: '✓ Device connected',
+    appName: 'Smart Balcony Unimap', pairDesc: 'Scan the QR code on the device to start. You only need to do this once.', scanBtn: 'SCAN QR CODE', step1: 'Press the blue button above', step2: 'Point the camera at the QR code on the device', step3: 'The app opens straight away', scanHint: 'Point the camera at the QR code', cancel: 'Cancel', camErr: 'Cannot open the camera. Allow camera access, or scan the QR code with the phone Camera app.', badQR: 'This QR code is not for the Smart Balcony Unimap app.', connErr: 'Cannot connect. Check the internet and try again.', shareQR: '📱 Share to Another Phone (QR Code)', forget: 'Forget This Device', shareT: 'Scan with another phone', shareD: 'A family member can scan this code to use the same app.', close: 'Close', askForgetT: 'Forget this device?', askForgetD: 'You will need to scan the QR code again to use the app. Records are not deleted.', yesForget: 'YES, FORGET', paired: '✓ Device connected',
     potWeight: 'Pot weight', gram: 'grams', fertWater: 'Fertilizer water left', waterNow: 'WATER NOW', stopNow: 'STOP WATERING',
     mRecord: 'Records & Reports', mRecordSub: 'Save & download data', mHarvest: 'When to Harvest?', mHarvestSub: 'Work out harvest dates',
     mSettings: 'Settings', mSettingsSub: 'For carers / family', back: 'Back',
@@ -483,9 +495,30 @@ let live = null, config = {}, recording = false, recs = [], histChart = null;
    ===================================================================== */
 let deviceKey = null, fbReady = false;
 
-function initFirebase() {
-  if (typeof firebase === 'undefined' || FIREBASE_CONFIG.apiKey.startsWith('PASTE')) {
+// Muat pustaka Firebase dari CDN kedua jika CDN utama (gstatic) gagal
+function loadScript(src) {
+  return new Promise((ok, fail) => {
+    const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = fail;
+    document.head.appendChild(s);
+  });
+}
+async function ensureFirebase() {
+  if (typeof firebase !== 'undefined') return true;
+  try {
+    for (const m of ['app', 'auth', 'database'])
+      await loadScript(`https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-${m}-compat.js`);
+  } catch (e) {}
+  return typeof firebase !== 'undefined';
+}
+function retryLoad() { location.replace(location.pathname + '?r=' + Date.now()); }
+
+async function initFirebase() {
+  if (FIREBASE_CONFIG.apiKey.startsWith('PASTE')) {
     document.getElementById('ov-setup').classList.add('show');
+    return;
+  }
+  if (!(await ensureFirebase())) {
+    document.getElementById('ov-neterr').classList.add('show');
     return;
   }
   firebase.initializeApp(FIREBASE_CONFIG);
@@ -747,7 +780,7 @@ function exportExcel() {
   sh['!cols'] = [{ wch: 20 }, { wch: 22 }, { wch: 14 }];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, sh, 'Rekod');
-  XLSX.writeFile(wb, `Rekod_Pokok_${stamp()}.xlsx`);
+  XLSX.writeFile(wb, `Rekod_Smart_Balcony_${stamp()}.xlsx`);
   toast(T('saved'));
 }
 
@@ -782,7 +815,7 @@ function exportPDF() {
     startY: y, theme: 'striped', styles: { fontSize: 9 }, headStyles: { fillColor: [4, 120, 87] }, margin: { left: 14, right: 14 },
     head: [['No.', T('colTime'), T('colW')]], body: recs.map((r, i) => [i + 1, isoTime(r.t), r.w.toFixed(1)])
   });
-  doc.save(`Rekod_Pokok_${stamp()}.pdf`);
+  doc.save(`Rekod_Smart_Balcony_${stamp()}.pdf`);
   toast(T('saved'));
 }
 

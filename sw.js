@@ -1,13 +1,14 @@
-// Service Worker: Smart Plant Weighing PWA
-// Fail app disimpan (cache) supaya app dibuka pantas; data sentiasa diambil terus dari Firebase.
-const CACHE = 'smartplant-v5';
-const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './logo-unimap.png', './apple-touch-icon.png'];
+// Service Worker: Smart Balcony Unimap
+// Sentiasa cuba rangkaian dahulu (versi terbaru); guna cache hanya jika telefon offline.
+const CACHE = 'smartbalcony-v8';
+const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './logo-unimap.png'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).catch(() => {}));
   self.skipWaiting();
 });
 
+// Padam semua cache lama (termasuk salinan lama yang mungkin rosak)
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))));
   self.clients.claim();
@@ -18,26 +19,17 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
 
-  // Jangan cache trafik Firebase (data masa nyata & log masuk)
+  // Jangan sentuh trafik Firebase (data masa nyata & log masuk) atau fail APK
   if (/firebaseio\.com|firebasedatabase\.app|identitytoolkit|securetoken/.test(url.hostname)) return;
+  if (url.pathname.endsWith('.apk')) return;
 
-  if (url.origin === location.origin) {
-    // Fail app: cuba rangkaian dahulu (dapat versi terbaru), guna cache jika offline
-    e.respondWith(
-      fetch(req).then(res => {
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(req, copy));
-        return res;
-      }).catch(() => caches.match(req).then(r => r || caches.match('./index.html')))
-    );
-  } else {
-    // Pustaka CDN & font: guna cache dahulu
-    e.respondWith(
-      caches.match(req).then(hit => hit || fetch(req).then(res => {
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(req, copy));
-        return res;
-      }))
-    );
-  }
+  e.respondWith(
+    fetch(req).then(res => {
+      // Simpan hanya respons yang berjaya
+      if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
+      return res;
+    }).catch(() =>
+      caches.match(req).then(r => r || (req.mode === 'navigate' ? caches.match('./index.html') : Response.error()))
+    )
+  );
 });
