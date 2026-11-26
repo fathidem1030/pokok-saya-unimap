@@ -1,0 +1,62 @@
+{
+  "id": "/index.html",
+  "name": "Pokok Saya - Smart Plant Weighing",
+  "short_name": "Pokok Saya",
+  "description": "App mudah untuk memantau dan menyiram pokok dari mana-mana sahaja.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3f6f4",
+  "theme_color": "#065f46",
+  "lang": "ms",
+  "categories": [
+    "utilities",
+    "lifestyle",
+    "education"
+  ],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshots/1-utama.png",
+      "sizes": "780x1688",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Skrin utama: status pokok dan butang siram"
+    },
+    {
+      "src": "screenshots/2-tuai.png",
+      "sizes": "780x1688",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Kira tarikh tuai tanaman"
+    },
+    {
+      "src": "screenshots/3-tetapan.png",
+      "sizes": "780x1688",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Tetapan untuk penjaga"
+    }
+  ]
+}

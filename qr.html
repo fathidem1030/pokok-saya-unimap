@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jana Kod QR | Pokok Saya (untuk penjaga)</title>
+  <link rel="icon" href="icon-192.png">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+    body { background: #f3f6f4; color: #111827; padding: 20px 16px 40px; }
+    .wrap { max-width: 640px; margin: 0 auto; }
+    h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 4px; }
+    .sub { color: #4b5563; font-weight: 600; margin-bottom: 18px; line-height: 1.5; }
+    .card { background: #fff; border: 2px solid #d1d5db; border-radius: 18px; padding: 18px; margin-bottom: 14px; }
+    label { display: block; font-weight: 800; margin: 12px 0 6px; }
+    .hint { font-size: 0.85rem; color: #6b7280; font-weight: 600; margin-top: 4px; line-height: 1.45; }
+    input { width: 100%; font-size: 1rem; padding: 12px; border-radius: 12px; border: 2px solid #d1d5db; font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+    .row { display: flex; gap: 8px; }
+    button { border: none; border-radius: 12px; padding: 12px 16px; font-weight: 800; font-size: 0.95rem; cursor: pointer; background: #047857; color: #fff; white-space: nowrap; }
+    button.outline { background: #fff; color: #111827; border: 2px solid #d1d5db; }
+    .code { background: #111827; color: #34d399; font-family: 'JetBrains Mono', monospace; padding: 12px; border-radius: 12px; font-size: 0.9rem; word-break: break-all; margin-top: 6px; }
+    .warn { background: #fef3c7; border: 2px solid #f59e0b; color: #78350f; border-radius: 14px; padding: 12px; font-weight: 700; font-size: 0.92rem; line-height: 1.5; }
+
+    /* Pelekat yang dicetak */
+    .sticker { width: 320px; margin: 0 auto; border: 3px dashed #9ca3af; border-radius: 22px; padding: 18px; text-align: center; background: #fff; }
+    .sticker .logo { width: 220px; height: auto; }
+    .sticker h2 { font-size: 1.5rem; font-weight: 800; margin: 6px 0 2px; }
+    .sticker p { font-size: 1rem; font-weight: 700; color: #374151; }
+    .sticker .qr { width: 250px; height: 250px; image-rendering: pixelated; margin: 10px auto; display: block; }
+    .sticker small { display: block; color: #6b7280; font-weight: 600; font-size: 0.8rem; }
+
+    @media print {
+      body { background: #fff; padding: 0; }
+      .no-print { display: none !important; }
+      .sticker { border-color: #000; margin-top: 20mm; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="no-print">
+    <h1>Jana Kod QR untuk "Pokok Saya"</h1>
+    <p class="sub">Halaman ini untuk <b>penjaga / ahli keluarga</b>. Cetak kod QR dan tampal pada alat. Warga emas hanya perlu imbas kod ini sekali untuk membuka app. Tiada email atau kata laluan diperlukan.</p>
+
+    <div class="card">
+      <label for="in-url">1. Alamat app</label>
+      <input id="in-url" oninput="render()">
+      <div class="hint">Biasanya diisi secara automatik. Pastikan ia alamat <b>https://</b> tempat app dihoskan (cth: Netlify).</div>
+
+      <label for="in-key">2. Kunci alat (DEVICE_ID)</label>
+      <div class="row">
+        <input id="in-key" oninput="render()">
+        <button class="outline" onclick="newKey()">🔄 Baharu</button>
+      </div>
+      <div class="hint">Kunci rahsia dijana secara rawak. Ia mesti 16–64 aksara (huruf, nombor, - atau _). <b>Salin kunci yang sama ke kod ESP32</b>:</div>
+      <div class="code" id="esp-line">-</div>
+      <div class="row" style="margin-top:8px;"><button class="outline" onclick="copyEsp()">📋 Salin baris untuk ESP32</button></div>
+      <div class="hint" id="key-err" style="color:#b91c1c;"></div>
+    </div>
+
+    <div class="warn" style="margin-bottom:14px;">⚠️ Kod QR ini ialah <b>kunci</b> kepada alat. Sesiapa yang imbas boleh memantau dan menyiram pokok. Jangan kongsi di media sosial. Jika kod hilang atau bocor, tekan <b>🔄 Baharu</b>, kemas kini kod ESP32, dan cetak kod QR baharu.</div>
+  </div>
+
+  <!-- Pelekat untuk dicetak -->
+  <div class="sticker">
+    <img class="logo" src="logo-unimap.png" alt="UniMAP">
+    <h2>Pokok Saya 🌱</h2>
+    <p>Imbas kod ini dengan kamera telefon</p>
+    <img class="qr" id="qr" alt="Kod QR">
+    <small>Smart Plant Weighing System &bull; UniMAP</small>
+  </div>
+
+  <div class="no-print" style="margin-top:16px; display:grid; gap:8px;">
+    <button onclick="window.print()">🖨 Cetak Pelekat Kod QR</button>
+    <button class="outline" onclick="downloadQR()">⬇ Muat Turun Gambar Kod QR</button>
+    <div class="hint" style="text-align:center;">Pautan dalam kod QR:</div>
+    <div class="code" id="full-url">-</div>
+  </div>
+</div>
+
+<script>
+  const KEY_PATTERN = /^[A-Za-z0-9_-]{16,64}$/;
+  const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+
+  function newKey() {
+    const a = new Uint32Array(22); crypto.getRandomValues(a);
+    document.getElementById('in-key').value = 'pk_' + Array.from(a, n => CHARS[n % CHARS.length]).join('');
+    render();
+  }
+
+  function pairUrl() {
+    const base = document.getElementById('in-url').value.trim();
+    const key = document.getElementById('in-key').value.trim();
+    return `${base}${base.includes('?') ? '&' : '?'}k=${encodeURIComponent(key)}`;
+  }
+
+  function render() {
+    const key = document.getElementById('in-key').value.trim();
+    const ok = KEY_PATTERN.test(key);
+    document.getElementById('key-err').innerText = ok ? '' : 'Kunci tidak sah: mesti 16–64 aksara (A-Z, a-z, 0-9, - atau _).';
+    document.getElementById('esp-line').innerText = `#define DEVICE_ID             "${key}"`;
+    document.getElementById('full-url').innerText = ok ? pairUrl() : '-';
+    const img = document.getElementById('qr');
+    if (!ok || typeof qrcode === 'undefined') { img.removeAttribute('src'); return; }
+    const qr = qrcode(0, 'M'); qr.addData(pairUrl()); qr.make();
+    img.src = qr.createDataURL(10, 2);
+  }
+
+  function copyEsp() {
+    navigator.clipboard && navigator.clipboard.writeText(document.getElementById('esp-line').innerText);
+  }
+
+  function downloadQR() {
+    const src = document.getElementById('qr').src; if (!src) return;
+    const a = document.createElement('a'); a.href = src; a.download = 'Kod_QR_Pokok_Saya.png'; a.click();
+  }
+
+  // Alamat app lalai = index.html dalam folder yang sama
+  document.getElementById('in-url').value = location.href.replace(/qr\.html.*$/, 'index.html').split('#')[0];
+  newKey();
+</script>
+</body>
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#065f46">
+  <title>Muat Turun App Pokok Saya | UniMAP</title>
+  <meta name="description" content="Muat turun app Pokok Saya untuk memantau dan menyiram pokok dari mana-mana sahaja.">
+  <link rel="icon" href="icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+    html { font-size: 18px; }
+    body { background: #f3f6f4; color: #111827; line-height: 1.5; }
+    .wrap { max-width: 560px; margin: 0 auto; padding: 20px 16px 40px; }
+    .hero { text-align: center; background: #fff; border: 2px solid #d1d5db; border-radius: 24px; padding: 22px 18px; margin-bottom: 16px; }
+    .hero .logo { width: 100%; max-width: 260px; height: auto; }
+    .hero .icon { width: 96px; height: 96px; border-radius: 22px; margin: 14px 0 6px; box-shadow: 0 6px 18px rgba(0,0,0,0.12); }
+    .hero h1 { font-size: 1.8rem; font-weight: 800; }
+    .hero p { color: #4b5563; font-weight: 600; font-size: 1.02rem; }
+    .feat { display: grid; gap: 8px; margin: 14px 0 0; text-align: left; }
+    .feat div { font-weight: 700; font-size: 1rem; }
+
+    .card { background: #fff; border: 2px solid #d1d5db; border-radius: 22px; padding: 18px; margin-bottom: 14px; }
+    .card.hl { border: 3px solid #047857; box-shadow: 0 6px 20px rgba(4,120,87,0.15); }
+    .card h2 { font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .card .tag { white-space: nowrap; font-size: 0.75rem; background: #d1fae5; color: #065f46; padding: 3px 10px; border-radius: 20px; font-weight: 800; }
+    .btn { display: flex; align-items: center; justify-content: center; text-align: center; gap: 10px; width: 100%; border: none; border-radius: 18px; padding: 20px; font-size: 1.25rem; font-weight: 800; color: #fff; text-decoration: none; margin: 14px 0 6px; cursor: pointer; box-shadow: 0 5px 0 rgba(0,0,0,0.18); }
+    .btn.android { background: #047857; }
+    .btn.ios { background: #1d4ed8; }
+    .btn.outline { background: #fff; color: #111827; border: 2px solid #d1d5db; box-shadow: none; font-size: 1.05rem; padding: 16px; }
+    .btn.disabled { background: #9ca3af; pointer-events: none; box-shadow: none; }
+    .small { font-size: 0.9rem; color: #4b5563; font-weight: 600; text-align: center; }
+    ol { margin: 12px 0 0 0; padding-left: 0; list-style: none; counter-reset: s; }
+    ol li { counter-increment: s; position: relative; padding: 8px 0 8px 44px; font-weight: 600; font-size: 1.02rem; }
+    ol li b { font-weight: 800; }
+    ol li::before { content: counter(s); position: absolute; left: 0; top: 6px; background: #047857; color: #fff; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.95rem; }
+    .ios ol li::before { background: #1d4ed8; }
+    .note { background: #fef3c7; border: 2px solid #f59e0b; color: #78350f; border-radius: 14px; padding: 12px; font-weight: 700; font-size: 0.92rem; margin-top: 10px; }
+    .qr { width: 220px; height: 220px; image-rendering: pixelated; display: block; margin: 10px auto; border: 8px solid #fff; border-radius: 12px; }
+    .shots { display: flex; gap: 10px; overflow-x: auto; padding: 4px 0 8px; scroll-snap-type: x mandatory; }
+    .shots img { height: 360px; border-radius: 18px; border: 2px solid #d1d5db; scroll-snap-align: start; }
+    footer { text-align: center; color: #6b7280; font-weight: 600; font-size: 0.85rem; margin-top: 18px; }
+
+    /* Poster bercetak */
+    .poster { display: none; }
+    @media print {
+      body { background: #fff; }
+      .wrap > *:not(.poster) { display: none !important; }
+      .poster { display: block !important; text-align: center; padding-top: 15mm; }
+      .poster img.logo { width: 90mm; }
+      .poster h1 { font-size: 34pt; margin: 6mm 0 2mm; }
+      .poster p { font-size: 16pt; font-weight: 700; }
+      .poster img.qr { width: 95mm; height: 95mm; margin: 8mm auto; border: none; }
+      .poster .url { font-size: 12pt; color: #374151; word-break: break-all; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <img class="logo" src="logo-unimap.png" alt="Universiti Malaysia Perlis">
+    <br><img class="icon" src="icon-192.png" alt="Ikon app Pokok Saya">
+    <h1>Pokok Saya 🌱</h1>
+    <p>Pantau &amp; siram pokok anda dari mana-mana sahaja. Percuma.</p>
+    <div class="feat">
+      <div>✅ Tulisan besar, mudah untuk warga emas</div>
+      <div>✅ Tiada email atau kata laluan: imbas kod QR sahaja</div>
+      <div>✅ Siram pokok dengan satu butang</div>
+      <div>✅ Amaran bila air baja hampir habis</div>
+    </div>
+  </div>
+
+  <!-- ANDROID -->
+  <div class="card" id="card-android">
+    <h2>🤖 Telefon Android <span class="tag" id="tag-android" style="display:none">Telefon anda</span></h2>
+    <a id="btn-apk" class="btn android" href="PokokSaya.apk" download>⬇ Muat Turun App (APK)</a>
+    <p class="small" id="apk-info">Saiz kecil · Android 7 ke atas</p>
+    <ol>
+      <li>Tekan butang hijau di atas</li>
+      <li>Bila siap, tekan fail <b>PokokSaya.apk</b></li>
+      <li>Jika diminta, tekan <b>Tetapan → Benarkan dari sumber ini</b></li>
+      <li>Tekan <b>Pasang</b>, kemudian <b>Buka</b></li>
+      <li>Imbas kod QR pada alat. Siap!</li>
+    </ol>
+    <a class="btn outline" href="index.html">Atau buka terus dalam pelayar ›</a>
+  </div>
+
+  <!-- iPHONE -->
+  <div class="card ios" id="card-ios">
+    <h2>🍎 iPhone / iPad <span class="tag" id="tag-ios" style="display:none">Telefon anda</span></h2>
+    <a class="btn ios" href="index.html">Buka App Pokok Saya</a>
+    <ol>
+      <li>Buka halaman ini dalam <b>Safari</b></li>
+      <li>Tekan butang biru di atas</li>
+      <li>Tekan ikon <b>Kongsi</b> (kotak dengan anak panah ke atas)</li>
+      <li>Pilih <b>Tambah ke Skrin Utama</b> → <b>Tambah</b></li>
+      <li>Buka app dari skrin utama dan imbas kod QR pada alat</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h2>📸 Gambar app</h2>
+    <div class="shots">
+      <img src="screenshots/1-utama.png" alt="Skrin utama">
+      <img src="screenshots/2-tuai.png" alt="Bila boleh tuai">
+      <img src="screenshots/3-tetapan.png" alt="Tetapan">
+    </div>
+  </div>
+
+  <div class="card" style="text-align:center;">
+    <h2 style="justify-content:center;">📢 Kongsi kepada orang lain</h2>
+    <p class="small" style="margin-top:6px;">Imbas kod ini untuk buka halaman muat turun</p>
+    <img class="qr" id="qr-page" alt="Kod QR halaman muat turun">
+    <button class="btn outline" onclick="sharePage()">📤 Kongsi Pautan (WhatsApp, dll.)</button>
+    <button class="btn outline" onclick="window.print()">🖨 Cetak Poster</button>
+  </div>
+
+  <footer>Smart Plant Weighing System · Universiti Malaysia Perlis (UniMAP)</footer>
+
+  <!-- Poster (hanya muncul bila dicetak) -->
+  <div class="poster">
+    <img class="logo" src="logo-unimap.png" alt="UniMAP">
+    <h1>Pokok Saya 🌱</h1>
+    <p>Pantau &amp; siram pokok dari telefon anda</p>
+    <img class="qr" id="qr-poster" alt="Kod QR">
+    <p>Imbas dengan kamera telefon untuk muat turun</p>
+    <p class="url" id="poster-url"></p>
+  </div>
+</div>
+
+<script>
+  const pageUrl = location.href.split('#')[0].split('?')[0];
+
+  // Serlahkan kad mengikut jenis telefon pengguna
+  const ua = navigator.userAgent;
+  const isIOS = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isAndroid = /Android/i.test(ua);
+  if (isIOS) {
+    document.getElementById('card-ios').classList.add('hl');
+    document.getElementById('tag-ios').style.display = 'inline';
+    document.querySelector('.wrap').insertBefore(document.getElementById('card-ios'), document.getElementById('card-android'));
+  } else if (isAndroid) {
+    document.getElementById('card-android').classList.add('hl');
+    document.getElementById('tag-android').style.display = 'inline';
+  }
+
+  // Semak sama ada fail APK sudah dimuat naik oleh penjaga
+  fetch('PokokSaya.apk', { method: 'HEAD' }).then(r => {
+    const type = r.headers.get('content-type') || '';
+    if (!r.ok || type.includes('text/html')) throw new Error('tiada');
+    const mb = +r.headers.get('content-length') / 1048576;
+    document.getElementById('apk-info').innerText = `${mb ? mb.toFixed(1) + ' MB · ' : ''}Android 7 ke atas`;
+  }).catch(() => {
+    const b = document.getElementById('btn-apk');
+    b.classList.add('disabled'); b.innerText = 'APK akan tersedia tidak lama lagi';
+    document.getElementById('apk-info').innerText = 'Sementara itu, tekan "Buka terus dalam pelayar" di bawah.';
+  });
+
+  // Kod QR untuk halaman ini (kongsi & poster)
+  function makeQR(id, size) {
+    if (typeof qrcode === 'undefined') return;
+    const qr = qrcode(0, 'M'); qr.addData(pageUrl); qr.make();
+    document.getElementById(id).src = qr.createDataURL(size, 2);
+  }
+  makeQR('qr-page', 8); makeQR('qr-poster', 12);
+  document.getElementById('poster-url').innerText = pageUrl;
+
+  function sharePage() {
+    const text = 'Muat turun app Pokok Saya (UniMAP) untuk pantau & siram pokok: ' + pageUrl;
+    if (navigator.share) navigator.share({ title: 'Pokok Saya', text, url: pageUrl }).catch(() => {});
+    else window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+  }
+</script>
+</body>
+</html>

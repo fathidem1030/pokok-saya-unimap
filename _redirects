@@ -1,0 +1,2 @@
+# Android perlu fail ini di /.well-known/assetlinks.json (sahkan APK milik laman ini)
+/.well-known/assetlinks.json   /assetlinks.json   200

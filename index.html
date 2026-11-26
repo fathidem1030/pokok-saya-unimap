@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#065f46">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Pokok Saya">
+  <title>Pokok Saya</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+
+  <!-- Kod QR: imbas (jsQR) & jana (qrcode-generator) -->
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+  <style>
+    /* Reka bentuk mesra warga emas: tulisan besar, kontras tinggi, butang besar */
+    :root {
+      --bg: #f3f6f4; --card: #ffffff; --text: #111827; --muted: #4b5563; --border: #d1d5db;
+      --green: #047857; --green-bg: #d1fae5; --blue: #1d4ed8; --blue-bg: #dbeafe;
+      --red: #b91c1c; --red-bg: #fee2e2; --amber: #b45309; --amber-bg: #fef3c7; --grey-bg: #e5e7eb;
+      --safe-b: env(safe-area-inset-bottom, 0px);
+    }
+    html { font-size: 18px; }
+    html.big { font-size: 21px; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background: var(--bg); color: var(--text); line-height: 1.45; -webkit-font-smoothing: antialiased; }
+    button { font: inherit; cursor: pointer; }
+    button:active { transform: scale(0.98); }
+
+    .wrap { max-width: 560px; margin: 0 auto; padding: calc(14px + env(safe-area-inset-top, 0px)) 16px calc(28px + var(--safe-b)); }
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* Kepala */
+    .logo-bar { background: #fff; border: 2px solid var(--border); border-radius: 18px; padding: 10px 16px; display: flex; justify-content: center; margin-bottom: 14px; }
+    .logo-bar img { height: 64px; width: auto; max-width: 100%; object-fit: contain; }
+    html.big .logo-bar img { height: 72px; }
+    .hello { display: flex; align-items: center; gap: 12px; margin: 4px 0 16px; }
+    .hello img { width: 52px; height: 52px; border-radius: 14px; }
+    .hello h1 { font-size: 1.45rem; font-weight: 800; line-height: 1.2; }
+    .hello p { font-size: 0.95rem; color: var(--muted); font-weight: 600; }
+
+    .card { background: var(--card); border: 2px solid var(--border); border-radius: 20px; padding: 18px; margin-bottom: 14px; }
+
+    /* Status besar */
+    .status { border-radius: 22px; padding: 22px 18px; margin-bottom: 14px; display: flex; align-items: center; gap: 16px; border: 3px solid transparent; }
+    .status .emoji { font-size: 3.2rem; line-height: 1; }
+    .status .title { font-size: 1.4rem; font-weight: 800; line-height: 1.2; }
+    .status .desc { font-size: 1rem; font-weight: 600; margin-top: 4px; }
+    .status.ok    { background: var(--green-bg); border-color: var(--green); color: #064e3b; }
+    .status.water { background: var(--blue-bg);  border-color: var(--blue);  color: #1e3a8a; }
+    .status.warn  { background: var(--amber-bg); border-color: var(--amber); color: #78350f; }
+    .status.off   { background: var(--grey-bg);  border-color: #6b7280;      color: #1f2937; }
+
+    /* Nilai */
+    .big-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+    .val-card { background: var(--card); border: 2px solid var(--border); border-radius: 20px; padding: 16px; }
+    .val-card .k { font-size: 1rem; font-weight: 700; color: var(--muted); }
+    .val-card .v { font-size: 2.1rem; font-weight: 800; line-height: 1.15; margin-top: 4px; }
+    .val-card .u { font-size: 1rem; font-weight: 700; color: var(--muted); }
+    .bar { height: 18px; background: var(--grey-bg); border-radius: 10px; overflow: hidden; margin-top: 10px; border: 1px solid var(--border); }
+    .bar span { display: block; height: 100%; width: 0; background: var(--blue); border-radius: 10px; transition: width 0.6s ease; }
+    .bar.low span { background: var(--red); }
+
+    /* Butang utama */
+    .btn-main { width: 100%; border: none; border-radius: 22px; padding: 26px 16px; font-size: 1.5rem; font-weight: 800; color: #fff; display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 8px; box-shadow: 0 6px 0 rgba(0,0,0,0.18); }
+    .btn-main.siram { background: var(--blue); }
+    .btn-main.stop { background: var(--red); }
+    .btn-main:disabled { background: #9ca3af; box-shadow: none; }
+    .hint { text-align: center; font-size: 0.95rem; color: var(--muted); font-weight: 600; margin-bottom: 18px; }
+
+    .menu { display: grid; gap: 12px; }
+    .menu-btn { width: 100%; background: var(--card); border: 2px solid var(--border); border-radius: 20px; padding: 18px; display: flex; align-items: center; gap: 14px; text-align: left; color: var(--text); }
+    .menu-btn .ic { font-size: 2rem; width: 52px; height: 52px; border-radius: 14px; background: var(--green-bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .menu-btn .tx { font-size: 1.15rem; font-weight: 800; }
+    .menu-btn .sb { font-size: 0.9rem; color: var(--muted); font-weight: 600; }
+    .menu-btn .ar { margin-left: auto; font-size: 1.6rem; color: var(--muted); }
+
+    /* Halaman dalam */
+    .back { display: inline-flex; align-items: center; gap: 8px; background: var(--card); border: 2px solid var(--border); border-radius: 14px; padding: 12px 18px; font-size: 1.1rem; font-weight: 800; color: var(--text); margin-bottom: 16px; }
+    .page-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 4px; }
+    .page-sub { font-size: 1rem; color: var(--muted); font-weight: 600; margin-bottom: 16px; }
+    .sentence { font-size: 1.1rem; font-weight: 600; line-height: 1.55; }
+    .sentence b { font-weight: 800; }
+
+    .btn { width: 100%; border: none; border-radius: 16px; padding: 18px; font-size: 1.15rem; font-weight: 800; color: #fff; background: var(--green); margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .btn.excel { background: #15803d; } .btn.pdf { background: var(--red); } .btn.blue { background: var(--blue); }
+    .btn.outline { background: #fff; color: var(--text); border: 2px solid var(--border); }
+    .btn.danger { background: #fff; color: var(--red); border: 2px solid var(--red); }
+    .btn.rec-on { background: var(--red); animation: pulse 1.6s infinite; }
+    @keyframes pulse { 50% { opacity: 0.8; } }
+
+    label.lbl { display: block; font-size: 1.05rem; font-weight: 800; margin: 14px 0 8px; }
+    .field { width: 100%; font-size: 1.25rem; font-weight: 700; padding: 16px; border-radius: 14px; border: 2px solid var(--border); background: #fff; color: var(--text); outline: none; }
+    .field:focus { border-color: var(--green); }
+    .chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .chip { padding: 16px 0; border-radius: 14px; border: 2px solid var(--border); background: #fff; font-size: 1.1rem; font-weight: 800; color: var(--text); }
+    .chip.on { background: var(--green); border-color: var(--green); color: #fff; }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .small-lbl { font-size: 0.85rem; font-weight: 700; color: var(--muted); margin-bottom: 4px; display: block; }
+    .note { background: var(--amber-bg); border: 2px solid #f59e0b; color: #78350f; border-radius: 16px; padding: 14px; font-size: 1rem; font-weight: 700; margin-bottom: 14px; }
+
+    .harvest-box { background: var(--green-bg); border: 3px solid var(--green); border-radius: 20px; padding: 18px; margin-top: 16px; text-align: center; }
+    .harvest-box .k { font-size: 1.05rem; font-weight: 700; color: #065f46; }
+    .harvest-box .v { font-size: 1.6rem; font-weight: 800; color: #064e3b; margin: 6px 0; }
+    .harvest-box .s { font-size: 1rem; font-weight: 600; color: #065f46; }
+
+    /* Modal pengesahan */
+    .modal { position: fixed; inset: 0; background: rgba(17,24,39,0.6); z-index: 200; display: none; align-items: flex-end; justify-content: center; padding: 16px; }
+    .modal.show { display: flex; }
+    .modal-box { background: #fff; border-radius: 24px; padding: 24px 20px calc(20px + var(--safe-b)); width: 100%; max-width: 520px; text-align: center; }
+    .modal-box .emoji { font-size: 3rem; }
+    .modal-box h3 { font-size: 1.45rem; font-weight: 800; margin: 8px 0; }
+    .modal-box p { font-size: 1.05rem; color: var(--muted); font-weight: 600; margin-bottom: 8px; }
+
+    .overlay { position: fixed; inset: 0; background: var(--bg); z-index: 150; display: none; align-items: center; justify-content: center; padding: 24px; }
+    .overlay.show { display: flex; }
+    .login-box { width: 100%; max-width: 420px; text-align: center; }
+    .login-box img { width: 100%; max-width: 280px; height: auto; margin-bottom: 18px; background: #fff; border-radius: 16px; padding: 8px; }
+    .login-box h2 { font-size: 1.6rem; font-weight: 800; }
+    .login-box p { font-size: 1.05rem; color: var(--muted); font-weight: 600; margin: 6px 0 18px; }
+    .login-box .field { margin-bottom: 12px; }
+    .err { color: var(--red); font-weight: 800; font-size: 1rem; min-height: 24px; margin-top: 10px; }
+
+    /* Imbas QR */
+    .scan-ill { font-size: 4rem; margin: 6px 0 4px; }
+    .steps { text-align: left; background: #fff; border: 2px solid var(--border); border-radius: 18px; padding: 14px 16px; margin: 14px 0; }
+    .steps div { font-size: 1.05rem; font-weight: 700; padding: 6px 0; display: flex; gap: 10px; }
+    .steps b { background: var(--green); color: #fff; border-radius: 50%; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.95rem; }
+    .scanner { position: fixed; inset: 0; background: #000; z-index: 250; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+    .scanner.show { display: flex; }
+    .scanner video { width: 100%; max-width: 480px; border-radius: 20px; border: 4px solid #34d399; }
+    .scanner p { color: #fff; font-size: 1.2rem; font-weight: 800; margin: 16px 0; text-align: center; }
+    .scanner .btn { max-width: 480px; }
+    .qr-img { display: flex; justify-content: center; margin: 10px 0; }
+    .qr-img img { width: 240px; height: 240px; image-rendering: pixelated; border: 8px solid #fff; border-radius: 12px; }
+    .toast { position: fixed; left: 50%; bottom: calc(24px + var(--safe-b)); transform: translateX(-50%); background: #111827; color: #fff; padding: 16px 22px; border-radius: 16px; font-size: 1.1rem; font-weight: 800; z-index: 300; display: none; max-width: 92vw; text-align: center; }
+    .toast.show { display: block; }
+    .updated { text-align: center; font-size: 0.9rem; color: var(--muted); font-weight: 600; margin-top: 18px; }
+  </style>
+</head>
+<body>
+
+  <!-- ===== Tetapan belum diisi ===== -->
+  <div id="ov-setup" class="overlay">
+    <div class="login-box">
+      <img src="logo-unimap.png" alt="UniMAP">
+      <h2>Belum disediakan</h2>
+      <p>Penjaga perlu isi tetapan Firebase dalam fail index.html. Rujuk PANDUAN.md.</p>
+    </div>
+  </div>
+
+  <!-- ===== Imbas kod QR (sekali sahaja) ===== -->
+  <div id="ov-pair" class="overlay">
+    <div class="login-box">
+      <img src="logo-unimap.png" alt="UniMAP">
+      <h2 data-t="appName">Pokok Saya</h2>
+      <p data-t="pairDesc">Imbas kod QR pada alat untuk mula. Cuma perlu buat sekali sahaja.</p>
+      <button class="btn-main siram" onclick="startScan()" style="font-size:1.3rem;">📷 <span data-t="scanBtn">IMBAS KOD QR</span></button>
+      <div class="steps">
+        <div><b>1</b><span data-t="step1">Tekan butang biru di atas</span></div>
+        <div><b>2</b><span data-t="step2">Halakan kamera ke kod QR pada alat</span></div>
+        <div><b>3</b><span data-t="step3">App akan terus dibuka</span></div>
+      </div>
+      <div class="err" id="pair-err"></div>
+    </div>
+  </div>
+
+  <!-- ===== Kamera pengimbas ===== -->
+  <div id="scanner" class="scanner">
+    <video id="scan-video" playsinline muted></video>
+    <p data-t="scanHint">Halakan kamera ke kod QR</p>
+    <button class="btn outline" onclick="stopScan()" data-t="cancel">Batal</button>
+  </div>
+  <canvas id="scan-canvas" style="display:none"></canvas>
+
+  <div class="wrap">
+
+    <!-- ================= SKRIN UTAMA ================= -->
+    <section id="pg-home" class="page active">
+      <div class="logo-bar"><img src="logo-unimap.png" alt="Universiti Malaysia Perlis"></div>
+      <div class="hello">
+        <div>
+          <h1 id="greet">Selamat datang</h1>
+          <p id="today">-</p>
+        </div>
+      </div>
+
+      <div id="status" class="status off">
+        <div class="emoji" id="st-emoji">⏳</div>
+        <div>
+          <div class="title" id="st-title">Sedang menyambung…</div>
+          <div class="desc" id="st-desc">Sila tunggu sebentar.</div>
+        </div>
+      </div>
+
+      <div class="big-row">
+        <div class="val-card">
+          <div class="k" data-t="potWeight">Berat pasu</div>
+          <div class="v" id="v-weight">-</div>
+          <div class="u" data-t="gram">gram</div>
+        </div>
+        <div class="val-card">
+          <div class="k" data-t="fertWater">Baki air baja</div>
+          <div class="v" id="v-pct">-</div>
+          <div class="u" id="v-liter">-</div>
+          <div class="bar" id="bar"><span id="bar-fill"></span></div>
+        </div>
+      </div>
+
+      <button id="btn-siram" class="btn-main siram" onclick="askPump()" disabled>💧 <span data-t="waterNow">SIRAM SEKARANG</span></button>
+      <div class="hint" id="siram-hint">Pokok juga disiram secara automatik.</div>
+
+      <div class="menu">
+        <button class="menu-btn" onclick="go('rekod')">
+          <span class="ic">📊</span>
+          <span><span class="tx" data-t="mRecord">Rekod & Laporan</span><br><span class="sb" data-t="mRecordSub">Simpan & muat turun data</span></span>
+          <span class="ar">›</span>
+        </button>
+        <button class="menu-btn" onclick="go('tuai')">
+          <span class="ic">🌿</span>
+          <span><span class="tx" data-t="mHarvest">Bila Boleh Tuai?</span><br><span class="sb" data-t="mHarvestSub">Kira tarikh tuai tanaman</span></span>
+          <span class="ar">›</span>
+        </button>
+        <button class="menu-btn" onclick="go('tetapan')">
+          <span class="ic" style="background:var(--grey-bg)">⚙️</span>
+          <span><span class="tx" data-t="mSettings">Tetapan</span><br><span class="sb" data-t="mSettingsSub">Untuk penjaga / ahli keluarga</span></span>
+          <span class="ar">›</span>
+        </button>
+      </div>
+
+      <div class="updated" id="updated">-</div>
+    </section>
+
+    <!-- ================= REKOD & LAPORAN ================= -->
+    <section id="pg-rekod" class="page">
+      <button class="back" onclick="goHome()">‹ <span data-t="back">Kembali</span></button>
+      <div class="page-title" data-t="mRecord">Rekod & Laporan</div>
+      <div class="page-sub" data-t="recSub">Tekan butang hijau untuk mula simpan berat pasu. Rekod tetap disimpan walaupun telefon ditutup.</div>
+
+      <div class="card">
+        <button id="btn-rec" class="btn" onclick="toggleRecording()">● Mula Simpan Rekod</button>
+        <p class="sentence" id="rec-sentence" style="margin-top:14px;">-</p>
+      </div>
+
+      <div class="card">
+        <div class="sentence" style="font-weight:800; margin-bottom:8px;" data-t="chartTitle">Berat pasu (rekod disimpan)</div>
+        <canvas id="histChart" height="210"></canvas>
+      </div>
+
+      <div class="card">
+        <div class="sentence" style="font-weight:800;" data-t="download">Muat turun laporan</div>
+        <button class="btn excel" onclick="exportExcel()">⬇ <span data-t="dlExcel">Muat Turun Excel</span></button>
+        <button class="btn pdf" onclick="exportPDF()">⬇ <span data-t="dlPdf">Muat Turun PDF</span></button>
+      </div>
+    </section>
+
+    <!-- ================= BILA BOLEH TUAI ================= -->
+    <section id="pg-tuai" class="page">
+      <button class="back" onclick="goHome()">‹ <span data-t="back">Kembali</span></button>
+      <div class="page-title" data-t="mHarvest">Bila Boleh Tuai?</div>
+      <div class="page-sub" data-t="harvSub">Pilih tanaman dan tarikh mula semai.</div>
+
+      <div class="card">
+        <label class="lbl" for="sel-plant" data-t="whatPlant">Apa yang anda tanam?</label>
+        <select id="sel-plant" class="field" onchange="calcHarvest()">
+          <option value="kangkung">Kangkung</option>
+          <option value="bayam">Bayam</option>
+          <option value="sawi">Sawi / Pak Choy</option>
+          <option value="salad">Salad</option>
+          <option value="daun_bawang">Daun Bawang</option>
+          <option value="kucai">Kucai</option>
+          <option value="pudina">Pudina</option>
+          <option value="basil">Basil / Kemangi</option>
+          <option value="daun_sup">Daun Sup</option>
+          <option value="tomato">Tomato Ceri</option>
+          <option value="cili">Cili Padi</option>
+          <option value="terung">Terung Kecil</option>
+        </select>
+
+        <label class="lbl" for="in-sow" data-t="whenSow">Bila mula semai?</label>
+        <input id="in-sow" class="field" type="date" onchange="calcHarvest()">
+
+        <div class="harvest-box">
+          <div class="k" data-t="moveDate">Alih ke pasu pada</div>
+          <div class="v" id="h-move">-</div>
+          <div class="k" style="margin-top:12px;" data-t="harvDate">Boleh tuai antara</div>
+          <div class="v" id="h-harv">-</div>
+          <div class="s" id="h-tip">-</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TETAPAN (PENJAGA) ================= -->
+    <section id="pg-tetapan" class="page">
+      <button class="back" onclick="goHome()">‹ <span data-t="back">Kembali</span></button>
+      <div class="page-title" data-t="mSettings">Tetapan</div>
+      <div class="note" data-t="setNote">⚠️ Bahagian ini untuk penjaga atau ahli keluarga. Tidak perlu diubah untuk kegunaan harian.</div>
+
+      <div class="card">
+        <div class="sentence" style="font-weight:800;" data-t="display">Paparan</div>
+        <button class="btn outline" onclick="toggleBig()" id="btn-big">🔍 Tulisan Lebih Besar</button>
+        <button class="btn outline" onclick="toggleLang()" id="btn-lang">🌐 English</button>
+      </div>
+
+      <div class="card">
+        <label class="lbl" for="in-thresh" data-t="threshLbl">Siram automatik bila berat pasu bawah (gram)</label>
+        <input id="in-thresh" class="field" type="number" inputmode="decimal">
+        <button class="btn" onclick="saveThreshold()" data-t="save">Simpan</button>
+      </div>
+
+      <div class="card">
+        <label class="lbl" data-t="timerLbl">Berapa lama setiap kali siram?</label>
+        <div class="chips">
+          <button class="chip" data-sec="30" onclick="saveTimer(30)">30s</button>
+          <button class="chip" data-sec="60" onclick="saveTimer(60)">1 min</button>
+          <button class="chip" data-sec="90" onclick="saveTimer(90)">1.5 min</button>
+          <button class="chip" data-sec="120" onclick="saveTimer(120)">2 min</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <label class="lbl" for="in-shape" data-t="tankLbl">Bentuk bekas air baja</label>
+        <select id="in-shape" class="field" onchange="renderTank()">
+          <option value="silinder" data-t="cyl">Bulat (silinder)</option>
+          <option value="kuboid" data-t="box">Segi empat (kotak)</option>
+        </select>
+        <div id="tank-dims" style="margin-top:10px;"></div>
+        <button class="btn blue" onclick="saveTank()" data-t="save">Simpan</button>
+      </div>
+
+      <div class="card">
+        <div class="sentence" style="font-weight:800;" data-t="dataSec">Data & akaun</div>
+        <button class="btn danger" onclick="askClear()" data-t="clearAll">🗑 Padam Semua Rekod</button>
+        <button class="btn outline" onclick="showShareQR()" data-t="shareQR">📱 Kongsi ke Telefon Lain (Kod QR)</button>
+        <button class="btn outline" onclick="askForget()" data-t="forget">Lupakan Alat Ini</button>
+        <p class="updated" id="dev-info">-</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- Modal pengesahan -->
+  <div id="modal" class="modal" onclick="if(event.target===this) closeModal()">
+    <div class="modal-box">
+      <div class="emoji" id="md-emoji">💧</div>
+      <h3 id="md-title">-</h3>
+      <p id="md-desc">-</p>
+      <button class="btn blue" id="md-yes">YA</button>
+      <button class="btn outline" onclick="closeModal()" data-t="no">Tidak</button>
+    </div>
+  </div>
+
+  <!-- Modal kod QR untuk kongsi -->
+  <div id="qr-modal" class="modal" onclick="if(event.target===this) this.classList.remove('show')">
+    <div class="modal-box">
+      <h3 data-t="shareT">Imbas dengan telefon lain</h3>
+      <p data-t="shareD">Telefon ahli keluarga boleh imbas kod ini untuk guna app yang sama.</p>
+      <div class="qr-img" id="qr-box"></div>
+      <button class="btn outline" onclick="document.getElementById('qr-modal').classList.remove('show')" data-t="close">Tutup</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+<script>
+/* =====================================================================
+   1) TETAPAN FIREBASE  (diisi oleh penjaga — lihat PANDUAN.md)
+   ===================================================================== */
+const FIREBASE_CONFIG = {
+  apiKey: "PASTE_API_KEY",
+  authDomain: "PROJECT_ID.firebaseapp.com",
+  databaseURL: "https://PROJECT_ID-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "PROJECT_ID",
+  appId: "PASTE_APP_ID"
+};
+// Tiada log masuk: kunci alat (DEVICE_ID) diambil daripada kod QR dan disimpan dalam telefon.
+const KEY_PATTERN = /^[A-Za-z0-9_-]{16,64}$/;   // kunci mesti 16–64 aksara (lihat qr.html)
+const HISTORY_LIMIT = 20000;
+const OFFLINE_AFTER_MS = 20000;     // dianggap tidak tersambung jika tiada data > 20 saat
+const LOW_WATER_PCT = 20;           // amaran air baja hampir habis
+
+/* =====================================================================
+   2) BAHASA (ringkas & mudah)
+   ===================================================================== */
+let lang = 'MY';
+const TXT = {
+  MY: {
+    appName: 'Pokok Saya', pairDesc: 'Imbas kod QR pada alat untuk mula. Cuma perlu buat sekali sahaja.', scanBtn: 'IMBAS KOD QR', step1: 'Tekan butang biru di atas', step2: 'Halakan kamera ke kod QR pada alat', step3: 'App akan terus dibuka', scanHint: 'Halakan kamera ke kod QR', cancel: 'Batal', camErr: 'Kamera tidak dapat dibuka. Benarkan akses kamera, atau imbas kod QR dengan aplikasi Kamera telefon.', badQR: 'Kod QR ini bukan untuk app Pokok Saya.', connErr: 'Tidak dapat menyambung. Semak internet dan cuba lagi.', shareQR: '📱 Kongsi ke Telefon Lain (Kod QR)', forget: 'Lupakan Alat Ini', shareT: 'Imbas dengan telefon lain', shareD: 'Telefon ahli keluarga boleh imbas kod ini untuk guna app yang sama.', close: 'Tutup', askForgetT: 'Lupakan alat ini?', askForgetD: 'Anda perlu imbas kod QR semula untuk guna app. Rekod tidak dipadam.', yesForget: 'YA, LUPAKAN', paired: '✓ Alat berjaya disambung',
+    potWeight: 'Berat pasu', gram: 'gram', fertWater: 'Baki air baja', waterNow: 'SIRAM SEKARANG', stopNow: 'BERHENTI SIRAM',
+    mRecord: 'Rekod & Laporan', mRecordSub: 'Simpan & muat turun data', mHarvest: 'Bila Boleh Tuai?', mHarvestSub: 'Kira tarikh tuai tanaman',
+    mSettings: 'Tetapan', mSettingsSub: 'Untuk penjaga / ahli keluarga', back: 'Kembali',
+    recSub: 'Tekan butang hijau untuk mula simpan berat pasu. Rekod tetap disimpan walaupun telefon ditutup.',
+    chartTitle: 'Berat pasu (rekod disimpan)', download: 'Muat turun laporan', dlExcel: 'Muat Turun Excel', dlPdf: 'Muat Turun PDF',
+    harvSub: 'Pilih tanaman dan tarikh mula semai.', whatPlant: 'Apa yang anda tanam?', whenSow: 'Bila mula semai?', moveDate: 'Alih ke pasu pada', harvDate: 'Boleh tuai antara',
+    setNote: '⚠️ Bahagian ini untuk penjaga atau ahli keluarga. Tidak perlu diubah untuk kegunaan harian.', display: 'Paparan',
+    threshLbl: 'Siram automatik bila berat pasu bawah (gram)', save: 'Simpan', timerLbl: 'Berapa lama setiap kali siram?', tankLbl: 'Bentuk bekas air baja',
+    cyl: 'Bulat (silinder)', box: 'Segi empat (kotak)', dataSec: 'Data & alat', clearAll: '🗑 Padam Semua Rekod', no: 'Tidak',
+    // dinamik
+    gMorning: 'Selamat pagi', gNoon: 'Selamat tengah hari', gEvening: 'Selamat petang', gNight: 'Selamat malam',
+    sConnTitle: 'Sedang menyambung…', sConnDesc: 'Sila tunggu sebentar.',
+    sOffTitle: 'Alat tidak tersambung', sOffDesc: 'Pastikan alat dihidupkan dan Wi-Fi rumah berfungsi.',
+    sWaterTitle: 'Sedang menyiram…', sWaterDesc: 'Pam akan berhenti sendiri.',
+    sLowTitle: 'Air baja hampir habis', sLowDesc: 'Sila isi semula bekas air baja.',
+    sDryTitle: 'Pokok perlu air', sDryDesc: 'Pokok akan disiram secara automatik.',
+    sOkTitle: 'Pokok dalam keadaan baik', sOkDesc: 'Tiada apa yang perlu dibuat.',
+    hintAuto: 'Pokok juga disiram secara automatik.', hintStop: 'Tekan untuk hentikan siraman.', hintOff: 'Butang tidak boleh digunakan bila alat tidak tersambung.',
+    liter: 'liter', updated: 'Kemas kini terakhir', never: 'Belum ada data',
+    askWaterT: 'Siram pokok sekarang?', askWaterD: s => `Pam akan berhenti sendiri selepas ${s}.`, yesWater: 'YA, SIRAM',
+    askStopT: 'Berhenti siram?', askStopD: 'Pam akan dimatikan sekarang.', yesStop: 'YA, BERHENTI',
+    askClearT: 'Padam semua rekod?', askClearD: 'Muat turun Excel dahulu jika perlu. Rekod tidak boleh dikembalikan.', yesClear: 'YA, PADAM',
+    sentWater: '💧 Arahan siram dihantar', sentStop: '✋ Arahan berhenti dihantar', saved: '✓ Disimpan', deleted: '✓ Rekod dipadam',
+    offlineSaved: 'Disimpan. Akan berfungsi bila alat tersambung semula.', invalid: 'Sila masukkan nombor yang betul',
+    recStart: '● Mula Simpan Rekod', recStop: '■ Berhenti Simpan Rekod',
+    recOn: 'Rekod <b>sedang disimpan</b> setiap 5 saat.', recOff: 'Rekod <b>tidak disimpan</b> sekarang.',
+    recCount: (n, a, b) => ` Ada <b>${n} rekod</b>, dari <b>${a}</b> hingga <b>${b}</b>.`, recNone: ' Belum ada rekod.',
+    noData: 'Belum ada rekod untuk dimuat turun.', libErr: 'Tidak dapat muat turun. Semak sambungan internet.',
+    bigOn: '🔍 Tulisan Biasa', bigOff: '🔍 Tulisan Lebih Besar', langBtn: '🌐 English',
+    radius: 'Jejari (cm)', height: 'Tinggi (cm)', length: 'Panjang (cm)', width: 'Lebar (cm)',
+    direct: 'Tanam terus (tiada semaian)', tip: (a, b) => `Iaitu ${a} hingga ${b} hari selepas dialih.`,
+    reportTitle: 'Laporan Berat Pasu', generated: 'Dijana pada', period: 'Tempoh', count: 'Jumlah rekod', avg: 'Purata (g)', min: 'Paling rendah (g)', max: 'Paling tinggi (g)',
+    colTime: 'Tarikh & Masa', colW: 'Berat (g)', minWord: 'minit', secWord: 'saat', devInfo: 'Alat'
+  },
+  EN: {
+    appName: 'My Plant', pairDesc: 'Scan the QR code on the device to start. You only need to do this once.', scanBtn: 'SCAN QR CODE', step1: 'Press the blue button above', step2: 'Point the camera at the QR code on the device', step3: 'The app opens straight away', scanHint: 'Point the camera at the QR code', cancel: 'Cancel', camErr: 'Cannot open the camera. Allow camera access, or scan the QR code with the phone Camera app.', badQR: 'This QR code is not for the My Plant app.', connErr: 'Cannot connect. Check the internet and try again.', shareQR: '📱 Share to Another Phone (QR Code)', forget: 'Forget This Device', shareT: 'Scan with another phone', shareD: 'A family member can scan this code to use the same app.', close: 'Close', askForgetT: 'Forget this device?', askForgetD: 'You will need to scan the QR code again to use the app. Records are not deleted.', yesForget: 'YES, FORGET', paired: '✓ Device connected',
+    potWeight: 'Pot weight', gram: 'grams', fertWater: 'Fertilizer water left', waterNow: 'WATER NOW', stopNow: 'STOP WATERING',
+    mRecord: 'Records & Reports', mRecordSub: 'Save & download data', mHarvest: 'When to Harvest?', mHarvestSub: 'Work out harvest dates',
+    mSettings: 'Settings', mSettingsSub: 'For carers / family', back: 'Back',
+    recSub: 'Press the green button to start saving pot weight. Records are kept even if the phone is off.',
+    chartTitle: 'Pot weight (saved records)', download: 'Download report', dlExcel: 'Download Excel', dlPdf: 'Download PDF',
+    harvSub: 'Pick your plant and sowing date.', whatPlant: 'What are you growing?', whenSow: 'When did you sow?', moveDate: 'Move to pot on', harvDate: 'Harvest between',
+    setNote: '⚠️ This section is for carers or family. No need to change it for daily use.', display: 'Display',
+    threshLbl: 'Water automatically when pot weight is below (grams)', save: 'Save', timerLbl: 'How long each watering?', tankLbl: 'Fertilizer container shape',
+    cyl: 'Round (cylinder)', box: 'Square (box)', dataSec: 'Data & device', clearAll: '🗑 Delete All Records', no: 'No',
+    gMorning: 'Good morning', gNoon: 'Good afternoon', gEvening: 'Good evening', gNight: 'Good night',
+    sConnTitle: 'Connecting…', sConnDesc: 'Please wait a moment.',
+    sOffTitle: 'Device not connected', sOffDesc: 'Make sure the device is on and home Wi-Fi is working.',
+    sWaterTitle: 'Watering now…', sWaterDesc: 'The pump will stop by itself.',
+    sLowTitle: 'Fertilizer water is low', sLowDesc: 'Please refill the fertilizer container.',
+    sDryTitle: 'Plant needs water', sDryDesc: 'It will be watered automatically.',
+    sOkTitle: 'Your plant is doing well', sOkDesc: 'Nothing to do.',
+    hintAuto: 'The plant is also watered automatically.', hintStop: 'Press to stop watering.', hintOff: 'The button cannot be used while the device is offline.',
+    liter: 'litres', updated: 'Last updated', never: 'No data yet',
+    askWaterT: 'Water the plant now?', askWaterD: s => `The pump will stop by itself after ${s}.`, yesWater: 'YES, WATER',
+    askStopT: 'Stop watering?', askStopD: 'The pump will turn off now.', yesStop: 'YES, STOP',
+    askClearT: 'Delete all records?', askClearD: 'Download Excel first if needed. Records cannot be recovered.', yesClear: 'YES, DELETE',
+    sentWater: '💧 Watering command sent', sentStop: '✋ Stop command sent', saved: '✓ Saved', deleted: '✓ Records deleted',
+    offlineSaved: 'Saved. It will apply when the device reconnects.', invalid: 'Please enter a valid number',
+    recStart: '● Start Saving Records', recStop: '■ Stop Saving Records',
+    recOn: 'Records <b>are being saved</b> every 5 seconds.', recOff: 'Records are <b>not being saved</b> now.',
+    recCount: (n, a, b) => ` There are <b>${n} records</b>, from <b>${a}</b> to <b>${b}</b>.`, recNone: ' No records yet.',
+    noData: 'No records to download yet.', libErr: 'Cannot download. Check your internet connection.',
+    bigOn: '🔍 Normal Text', bigOff: '🔍 Bigger Text', langBtn: '🌐 Bahasa Melayu',
+    radius: 'Radius (cm)', height: 'Height (cm)', length: 'Length (cm)', width: 'Width (cm)',
+    direct: 'Planted directly (no nursery)', tip: (a, b) => `That is ${a} to ${b} days after moving.`,
+    reportTitle: 'Pot Weight Report', generated: 'Generated on', period: 'Period', count: 'Total records', avg: 'Average (g)', min: 'Lowest (g)', max: 'Highest (g)',
+    colTime: 'Date & Time', colW: 'Weight (g)', minWord: 'minutes', secWord: 'seconds', devInfo: 'Device'
+  }
+};
+const T = k => TXT[lang][k];
+
+/* =====================================================================
+   3) KEADAAN APP
+   ===================================================================== */
+let db, refs = {}, histQuery = null, serverOffset = 0;
+let live = null, config = {}, recording = false, recs = [], histChart = null;
+
+/* =====================================================================
+   4) FIREBASE
+   ===================================================================== */
+let deviceKey = null, fbReady = false;
+
+function initFirebase() {
+  if (typeof firebase === 'undefined' || FIREBASE_CONFIG.apiKey.startsWith('PASTE')) {
+    document.getElementById('ov-setup').classList.add('show');
+    return;
+  }
+  firebase.initializeApp(FIREBASE_CONFIG);
+  db = firebase.database();
+  fbReady = true;
+
+  // 1) Kunci daripada pautan kod QR (bila diimbas dengan kamera telefon)
+  const fromUrl = keyFromText(location.href);
+  if (fromUrl) {
+    saveKey(fromUrl);
+    history.replaceState(null, '', location.pathname);   // buang kunci dari bar alamat
+  }
+  // 2) Kunci yang sudah disimpan sebelum ini
+  try { deviceKey = deviceKey || localStorage.getItem('pk_key'); } catch (e) {}
+
+  if (deviceKey) connectDevice(); else showPair();
+}
+
+function keyFromText(text) {
+  try {
+    const u = new URL(text, location.href);
+    const k = u.searchParams.get('k') || new URLSearchParams(u.hash.replace(/^#/, '')).get('k');
+    return k && KEY_PATTERN.test(k) ? k : null;
+  } catch (e) { return null; }
+}
+function saveKey(k) { deviceKey = k; try { localStorage.setItem('pk_key', k); } catch (e) {} }
+function showPair() { document.getElementById('ov-pair').classList.add('show'); }
+
+// Sambung tanpa email/kata laluan (Firebase Anonymous Auth)
+function connectDevice() {
+  document.getElementById('ov-pair').classList.remove('show');
+  const base = `devices/${deviceKey}`;
+  refs = {
+    live: db.ref(`${base}/live`),
+    config: db.ref(`${base}/ctrl/config`),
+    command: db.ref(`${base}/ctrl/command`),
+    recording: db.ref(`${base}/ctrl/recording`),
+    history: db.ref(`${base}/history`)
+  };
+  const auth = firebase.auth();
+  const start = () => subscribe();
+  if (auth.currentUser) start();
+  else auth.signInAnonymously().then(start).catch(() => {
+    document.getElementById('pair-err').innerText = T('connErr'); showPair();
+  });
+}
+
+function askForget() {
+  confirmBox('📵', T('askForgetT'), T('askForgetD'), T('yesForget'), 'danger-fill', () => {
+    unsubscribe();
+    deviceKey = null; try { localStorage.removeItem('pk_key'); } catch (e) {}
+    goHome(); showPair();
+  });
+}
+
+/* ---------- Pengimbas kod QR dalam app ---------- */
+let scanStream = null, scanLoop = null;
+async function startScan() {
+  document.getElementById('pair-err').innerText = '';
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof jsQR === 'undefined') {
+    document.getElementById('pair-err').innerText = T('camErr'); return;
+  }
+  try {
+    scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+  } catch (e) { document.getElementById('pair-err').innerText = T('camErr'); return; }
+  const v = document.getElementById('scan-video');
+  v.srcObject = scanStream; await v.play();
+  document.getElementById('scanner').classList.add('show');
+  const c = document.getElementById('scan-canvas'), ctx = c.getContext('2d', { willReadFrequently: true });
+  const tick = () => {
+    if (!scanStream) return;
+    if (v.readyState === v.HAVE_ENOUGH_DATA) {
+      c.width = v.videoWidth; c.height = v.videoHeight;
+      ctx.drawImage(v, 0, 0, c.width, c.height);
+      const code = jsQR(ctx.getImageData(0, 0, c.width, c.height).data, c.width, c.height, { inversionAttempts: 'dontInvert' });
+      if (code && code.data) {
+        const k = keyFromText(code.data);
+        stopScan();
+        if (k) { saveKey(k); buzz(); toast(T('paired')); if (fbReady) connectDevice(); }
+        else document.getElementById('pair-err').innerText = T('badQR');
+        return;
+      }
+    }
+    scanLoop = requestAnimationFrame(tick);
+  };
+  tick();
+}
+function stopScan() {
+  if (scanLoop) cancelAnimationFrame(scanLoop);
+  if (scanStream) scanStream.getTracks().forEach(t => t.stop());
+  scanStream = null;
+  document.getElementById('scanner').classList.remove('show');
+}
+
+/* ---------- Kongsi kod QR ke telefon lain ---------- */
+function pairUrl() { return `${location.origin}${location.pathname}?k=${encodeURIComponent(deviceKey)}`; }
+function showShareQR() {
+  if (!deviceKey || typeof qrcode === 'undefined') return;
+  const qr = qrcode(0, 'M'); qr.addData(pairUrl()); qr.make();
+  document.getElementById('qr-box').innerHTML = `<img alt="QR" src="${qr.createDataURL(8, 2)}">`;
+  document.getElementById('qr-modal').classList.add('show');
+}
+
+function subscribe() {
+  db.ref('.info/serverTimeOffset').on('value', s => { serverOffset = s.val() || 0; });
+  refs.live.on('value', s => { live = s.val(); renderHome(); });
+  refs.config.on('value', s => { config = s.val() || {}; renderSettings(); renderHome(); });
+  refs.recording.on('value', s => { recording = !!s.val(); renderRecords(); });
+  recs = [];
+  histQuery = refs.history.orderByKey().limitToLast(HISTORY_LIMIT);
+  histQuery.on('child_added', c => { const v = c.val(); if (v && v.t) { recs.push({ k: c.key, t: v.t, w: +v.w }); laterRenderRecords(); } });
+  histQuery.on('child_removed', c => { recs = recs.filter(r => r.k !== c.key); laterRenderRecords(); });
+}
+function unsubscribe() {
+  Object.values(refs).forEach(r => r && r.off());
+  if (histQuery) histQuery.off();
+  if (db) db.ref('.info/serverTimeOffset').off();
+  live = null; recs = []; renderHome(); renderRecords();
+}
+let recTimer;
+function laterRenderRecords() { clearTimeout(recTimer); recTimer = setTimeout(renderRecords, 150); }
+
+/* =====================================================================
+   5) SKRIN UTAMA
+   ===================================================================== */
+function isOnline() { return live && live.ts && (Date.now() + serverOffset - live.ts) < OFFLINE_AFTER_MS; }
+
+function tank() {
+  const k = config.tank || {};
+  return { shape: k.shape || 'silinder', radius: +k.radius || 5.5, height: +k.height || 10, length: +k.length || 20, width: +k.width || 15 };
+}
+function volumeFromDistance(d) {
+  const c = tank(); const h = Math.max(0, Math.min(c.height, c.height - d));
+  return c.shape === 'kuboid' ? c.length * c.width * h : Math.PI * c.radius * c.radius * h;
+}
+
+function setStatus(cls, emoji, title, desc) {
+  const el = document.getElementById('status');
+  el.className = 'status ' + cls;
+  document.getElementById('st-emoji').innerText = emoji;
+  document.getElementById('st-title').innerText = title;
+  document.getElementById('st-desc').innerText = desc;
+}
+
+function timerText() {
+  const s = +config.timer || 30;
+  return s % 60 === 0 ? `${s / 60} ${T('minWord')}` : (s > 60 ? `${(s / 60).toFixed(1)} ${T('minWord')}` : `${s} ${T('secWord')}`);
+}
+
+function renderHome() {
+  // Sapaan & tarikh
+  const h = new Date().getHours();
+  document.getElementById('greet').innerText = h < 12 ? T('gMorning') : h < 14 ? T('gNoon') : h < 19 ? T('gEvening') : T('gNight');
+  document.getElementById('today').innerText = new Date().toLocaleDateString(lang === 'MY' ? 'ms-MY' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  const btn = document.getElementById('btn-siram'), hint = document.getElementById('siram-hint');
+
+  if (!live) {
+    setStatus('off', '⏳', T('sConnTitle'), T('sConnDesc'));
+    btn.disabled = true; hint.innerText = T('hintAuto');
+    document.getElementById('updated').innerText = T('never');
+    return;
+  }
+
+  const weight = +live.weight || 0;
+  const pct = live.percent != null ? +live.percent : 0;
+  const vol = live.volume != null ? +live.volume : volumeFromDistance(+live.distance || 0);
+  const pump = !!live.pump, online = isOnline();
+  const thr = +config.threshold || 0;
+
+  document.getElementById('v-weight').innerText = Math.round(weight);
+  document.getElementById('v-pct').innerText = Math.round(pct) + '%';
+  document.getElementById('v-liter').innerText = `${(vol / 1000).toFixed(2)} ${T('liter')}`;
+  document.getElementById('bar-fill').style.width = Math.max(0, Math.min(100, pct)) + '%';
+  document.getElementById('bar').classList.toggle('low', pct < LOW_WATER_PCT);
+  document.getElementById('updated').innerText = `${T('updated')}: ${friendlyTime(live.ts)}`;
+
+  // Status ringkas — keutamaan: tidak tersambung > menyiram > air habis > perlu air > baik
+  if (!online) setStatus('off', '📵', T('sOffTitle'), T('sOffDesc'));
+  else if (pump) setStatus('water', '💧', T('sWaterTitle'), T('sWaterDesc'));
+  else if (pct < LOW_WATER_PCT) setStatus('warn', '⚠️', T('sLowTitle'), T('sLowDesc'));
+  else if (thr && weight > 50 && weight < thr) setStatus('warn', '🥀', T('sDryTitle'), T('sDryDesc'));
+  else setStatus('ok', '🌱', T('sOkTitle'), T('sOkDesc'));
+
+  btn.disabled = !online;
+  btn.className = 'btn-main ' + (pump ? 'stop' : 'siram');
+  btn.innerHTML = pump ? `✋ <span>${T('stopNow')}</span>` : `💧 <span>${T('waterNow')}</span>`;
+  hint.innerText = !online ? T('hintOff') : pump ? T('hintStop') : T('hintAuto');
+}
+setInterval(renderHome, 5000);
+
+/* ---------- Siram dengan pengesahan ---------- */
+function askPump() {
+  const pumpOn = live && live.pump;
+  if (pumpOn) {
+    confirmBox('✋', T('askStopT'), T('askStopD'), T('yesStop'), 'danger-fill', () => sendPump(false));
+  } else {
+    confirmBox('💧', T('askWaterT'), T('askWaterD')(timerText()), T('yesWater'), 'blue', () => sendPump(true));
+  }
+}
+function sendPump(on) {
+  refs.command.set({ pump: on, ts: firebase.database.ServerValue.TIMESTAMP })
+    .then(() => toast(on ? T('sentWater') : T('sentStop')));
+  buzz();
+}
+
+/* =====================================================================
+   6) REKOD & LAPORAN
+   ===================================================================== */
+function toggleRecording() { refs.recording.set(!recording); buzz(); }
+
+function summary() {
+  if (!recs.length) return null;
+  let mn = Infinity, mx = -Infinity, sum = 0;
+  recs.forEach(r => { mn = Math.min(mn, r.w); mx = Math.max(mx, r.w); sum += r.w; });
+  return { n: recs.length, min: mn, max: mx, avg: sum / recs.length, a: recs[0].t, b: recs[recs.length - 1].t };
+}
+
+function renderRecords() {
+  const b = document.getElementById('btn-rec');
+  b.className = 'btn ' + (recording ? 'rec-on' : '');
+  b.innerText = recording ? T('recStop') : T('recStart');
+  const s = summary();
+  document.getElementById('rec-sentence').innerHTML =
+    (recording ? T('recOn') : T('recOff')) + (s ? T('recCount')(s.n, friendlyTime(s.a), friendlyTime(s.b)) : T('recNone'));
+
+  if (histChart) {
+    const step = Math.max(1, Math.ceil(recs.length / 150));
+    const pts = recs.filter((_, i) => i % step === 0 || i === recs.length - 1);
+    histChart.data.labels = pts.map(r => shortTime(r.t));
+    histChart.data.datasets[0].data = pts.map(r => r.w);
+    histChart.update('none');
+  }
+}
+
+function askClear() {
+  if (!recs.length) return toast(T('noData'));
+  confirmBox('🗑', T('askClearT'), T('askClearD'), T('yesClear'), 'danger-fill', () => {
+    refs.history.remove().then(() => { recs = []; renderRecords(); toast(T('deleted')); });
+  });
+}
+
+const stamp = () => isoTime(Date.now()).replace(/[: ]/g, '-');
+
+function exportExcel() {
+  if (!recs.length) return toast(T('noData'));
+  if (typeof XLSX === 'undefined') return toast(T('libErr'));
+  const s = summary();
+  const aoa = [
+    [T('reportTitle') + ' - Smart Plant Weighing System (UniMAP)'],
+    [`${T('generated')}: ${isoTime(Date.now())}`],
+    [`${T('period')}: ${isoTime(s.a)} - ${isoTime(s.b)}`],
+    [T('count'), s.n], [T('avg'), +s.avg.toFixed(1)], [T('min'), s.min], [T('max'), s.max],
+    [],
+    ['No.', T('colTime'), T('colW')],
+    ...recs.map((r, i) => [i + 1, isoTime(r.t), r.w])
+  ];
+  const sh = XLSX.utils.aoa_to_sheet(aoa);
+  sh['!cols'] = [{ wch: 20 }, { wch: 22 }, { wch: 14 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, sh, 'Rekod');
+  XLSX.writeFile(wb, `Rekod_Pokok_${stamp()}.xlsx`);
+  toast(T('saved'));
+}
+
+function exportPDF() {
+  if (!recs.length) return toast(T('noData'));
+  if (!window.jspdf || !window.jspdf.jsPDF) return toast(T('libErr'));
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const W = doc.internal.pageSize.getWidth(), s = summary();
+
+  doc.setFillColor(6, 95, 70); doc.rect(0, 0, W, 26, 'F');
+  doc.setTextColor(255); doc.setFont('helvetica', 'bold'); doc.setFontSize(16);
+  doc.text(T('reportTitle'), 14, 12);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+  doc.text(`Smart Plant Weighing System (UniMAP)  |  ${T('generated')}: ${isoTime(Date.now())}`, 14, 20);
+
+  doc.autoTable({
+    startY: 32, theme: 'grid', styles: { fontSize: 11 }, headStyles: { fillColor: [4, 120, 87] },
+    columnStyles: { 0: { cellWidth: 60, fontStyle: 'bold' } }, margin: { left: 14, right: 14 },
+    body: [[T('period'), `${isoTime(s.a)}  -  ${isoTime(s.b)}`], [T('count'), String(s.n)], [T('avg'), s.avg.toFixed(1)], [T('min'), s.min.toFixed(1)], [T('max'), s.max.toFixed(1)]]
+  });
+
+  let y = doc.lastAutoTable.finalY + 8;
+  const src = document.getElementById('histChart');
+  if (src && src.width) {
+    const c = document.createElement('canvas'); c.width = src.width; c.height = src.height;
+    const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(src, 0, 0);
+    const iw = W - 28, ih = iw * src.height / src.width;
+    doc.addImage(c.toDataURL('image/png'), 'PNG', 14, y, iw, ih); y += ih + 6;
+  }
+  doc.autoTable({
+    startY: y, theme: 'striped', styles: { fontSize: 9 }, headStyles: { fillColor: [4, 120, 87] }, margin: { left: 14, right: 14 },
+    head: [['No.', T('colTime'), T('colW')]], body: recs.map((r, i) => [i + 1, isoTime(r.t), r.w.toFixed(1)])
+  });
+  doc.save(`Rekod_Pokok_${stamp()}.pdf`);
+  toast(T('saved'));
+}
+
+/* =====================================================================
+   7) BILA BOLEH TUAI
+   ===================================================================== */
+const PLANTS = {
+  kangkung: { hss: 4, a: 20, b: 25 }, bayam: { hss: 6, a: 25, b: 30 }, sawi: { hss: 12, a: 30, b: 40 }, salad: { hss: 12, a: 35, b: 45 },
+  daun_bawang: { hss: 0, a: 30, b: 40 }, kucai: { hss: 12, a: 30, b: 40 }, pudina: { hss: 5, a: 40, b: 50 }, basil: { hss: 12, a: 40, b: 50 },
+  daun_sup: { hss: 17, a: 50, b: 60 }, tomato: { hss: 25, a: 55, b: 65 }, cili: { hss: 25, a: 60, b: 75 }, terung: { hss: 25, a: 65, b: 75 }
+};
+function calcHarvest() {
+  const p = PLANTS[document.getElementById('sel-plant').value], v = document.getElementById('in-sow').value;
+  if (!p || !v) return;
+  const [Y, M, D] = v.split('-').map(Number);
+  const add = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  const sow = new Date(Y, M - 1, D), move = add(sow, p.hss);
+  const f = d => d.toLocaleDateString(lang === 'MY' ? 'ms-MY' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  document.getElementById('h-move').innerText = p.hss === 0 ? T('direct') : f(move);
+  document.getElementById('h-harv').innerText = `${f(add(move, p.a))} – ${f(add(move, p.b))}`;
+  document.getElementById('h-tip').innerText = T('tip')(p.a, p.b);
+}
+
+/* =====================================================================
+   8) TETAPAN (PENJAGA)
+   ===================================================================== */
+function renderSettings() {
+  const th = document.getElementById('in-thresh');
+  if (document.activeElement !== th && config.threshold != null) th.value = config.threshold;
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', +c.dataset.sec === +config.timer));
+  const box = document.getElementById('tank-dims'), sel = document.getElementById('in-shape');
+  if (!box.contains(document.activeElement) && document.activeElement !== sel) { sel.value = tank().shape; renderTank(); }
+  document.getElementById('dev-info').innerText = deviceKey ? `${T('devInfo')}: ${deviceKey.slice(0, 4)}••••${deviceKey.slice(-4)}` : '';
+}
+
+function renderTank() {
+  const c = tank(), shape = document.getElementById('in-shape').value;
+  const inp = (id, lbl, val) => `<div><span class="small-lbl">${lbl}</span><input id="${id}" class="field" type="number" inputmode="decimal" value="${val}"></div>`;
+  document.getElementById('tank-dims').innerHTML = shape === 'kuboid'
+    ? `<div class="three">${inp('d-l', T('length'), c.length)}${inp('d-w', T('width'), c.width)}${inp('d-h', T('height'), c.height)}</div>`
+    : `<div class="two">${inp('d-r', T('radius'), c.radius)}${inp('d-h', T('height'), c.height)}</div>`;
+}
+
+function afterSave() { toast(isOnline() ? T('saved') : T('offlineSaved')); buzz(); }
+
+function saveThreshold() {
+  const v = parseFloat(document.getElementById('in-thresh').value);
+  if (isNaN(v) || v < 0) return toast(T('invalid'));
+  refs.config.update({ threshold: v }).then(afterSave);
+}
+function saveTimer(sec) { refs.config.update({ timer: sec }).then(afterSave); }
+function saveTank() {
+  const shape = document.getElementById('in-shape').value, n = id => parseFloat(document.getElementById(id).value);
+  const t = { shape, height: n('d-h') };
+  if (shape === 'kuboid') { t.length = n('d-l'); t.width = n('d-w'); } else t.radius = n('d-r');
+  if (Object.values(t).some(v => typeof v === 'number' && !(v > 0))) return toast(T('invalid'));
+  refs.config.child('tank').set(t).then(afterSave);
+}
+
+function toggleBig() {
+  const on = document.documentElement.classList.toggle('big');
+  try { localStorage.setItem('pk_big', on ? '1' : '0'); } catch (e) {}
+  applyLang();
+  if (histChart) setTimeout(() => histChart.resize(), 50);
+}
+function toggleLang() {
+  lang = lang === 'MY' ? 'EN' : 'MY';
+  try { localStorage.setItem('pk_lang', lang); } catch (e) {}
+  applyLang();
+}
+function applyLang() {
+  document.documentElement.lang = lang === 'MY' ? 'ms' : 'en';
+  document.querySelectorAll('[data-t]').forEach(el => { const v = TXT[lang][el.dataset.t]; if (typeof v === 'string') el.innerText = v; });
+  document.getElementById('btn-big').innerText = document.documentElement.classList.contains('big') ? T('bigOn') : T('bigOff');
+  document.getElementById('btn-lang').innerText = T('langBtn');
+  renderHome(); renderRecords(); renderSettings(); calcHarvest();
+}
+
+/* =====================================================================
+   9) NAVIGASI (butang Kembali telefon juga berfungsi)
+   ===================================================================== */
+function go(page) { history.pushState({ sub: true }, '', '#' + page); showPage(); }
+function goHome() {
+  if (history.state && history.state.sub) history.back();               // kembali seperti butang telefon
+  else { history.replaceState(null, '', location.pathname + location.search); showPage(); }  // jangan keluar app
+}
+window.addEventListener('popstate', showPage);
+function showPage() {
+  const p = (location.hash || '').replace('#', '') || 'home';
+  const id = ['rekod', 'tuai', 'tetapan'].includes(p) ? p : 'home';
+  document.querySelectorAll('.page').forEach(s => s.classList.toggle('active', s.id === 'pg-' + id));
+  window.scrollTo(0, 0);
+  if (id === 'rekod' && histChart) setTimeout(() => histChart.resize(), 50);
+}
+window.addEventListener('hashchange', showPage);
+
+/* =====================================================================
+   10) BANTUAN UI
+   ===================================================================== */
+function confirmBox(emoji, title, desc, yesText, style, onYes) {
+  document.getElementById('md-emoji').innerText = emoji;
+  document.getElementById('md-title').innerText = title;
+  document.getElementById('md-desc').innerText = desc;
+  const yes = document.getElementById('md-yes');
+  yes.innerText = yesText;
+  yes.className = 'btn ' + (style === 'danger-fill' ? 'pdf' : 'blue');
+  yes.onclick = () => { closeModal(); onYes(); };
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
+
+let toastT;
+function toast(m) { const el = document.getElementById('toast'); el.innerText = m; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 3200); }
+function buzz() { try { navigator.vibrate && navigator.vibrate(40); } catch (e) {} }
+
+const pad = n => String(n).padStart(2, '0');
+function isoTime(ms) { const d = new Date(ms); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; }
+function friendlyTime(ms) {
+  return new Date(ms).toLocaleString(lang === 'MY' ? 'ms-MY' : 'en-GB', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true });
+}
+function shortTime(ms) { const d = new Date(ms); return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+
+/* =====================================================================
+   11) PWA
+   ===================================================================== */
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+
+/* =====================================================================
+   12) MULA
+   ===================================================================== */
+window.addEventListener('load', () => {
+  try {
+    if (localStorage.getItem('pk_big') === '1') document.documentElement.classList.add('big');
+    lang = localStorage.getItem('pk_lang') || 'MY';
+  } catch (e) {}
+  const d = new Date();
+  document.getElementById('in-sow').value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+  if (typeof Chart !== 'undefined') {
+    histChart = new Chart(document.getElementById('histChart').getContext('2d'), {
+      type: 'line',
+      data: { labels: [], datasets: [{ data: [], borderColor: '#047857', backgroundColor: 'rgba(4,120,87,0.15)', fill: true, tension: 0.3, borderWidth: 3, pointRadius: 0 }] },
+      options: {
+        responsive: true, animation: false, plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { maxTicksLimit: 4, color: '#374151', font: { size: 13, weight: '600' } } },
+          y: { ticks: { color: '#374151', font: { size: 13, weight: '600' } }, grid: { color: '#e5e7eb' } }
+        }
+      }
+    });
+  }
+  renderTank();
+  applyLang();
+  showPage();
+  initFirebase();
+});
+</script>
+</body>
+</html>
