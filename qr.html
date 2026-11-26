@@ -119,10 +119,7 @@
 
   // Alamat app lalai = index.html dalam folder yang sama
   document.getElementById('in-url').value = location.href.replace(/qr\.html.*$/, 'index.html').split('#')[0];
-  // Jika pautan ada ?k=KUNCI, guna kunci itu (supaya sama dengan kod ESP32); jika tidak, jana baharu
-  const given = new URLSearchParams(location.search).get('k');
-  if (given && KEY_PATTERN.test(given)) { document.getElementById('in-key').value = given; render(); }
-  else newKey();
+  newKey();
 </script>
 </body>
 </html>
